@@ -171,6 +171,31 @@ def _qsd(gate1, gate2):
 
     return circuit
 
+# QR decomposition
+def _qr(gate):
+    U = gate
+    dim = len(U)
+    n_qubits = log2(dim)
+    qubits = QuantumRegister(n_qubits)
+    circuit = QuantumCircuit(qubits)
+    qH_list = []
+    for j in range(dim):
+        for i in range(j+1,dim):
+            Q = np.eye(dim)
+            length = round(np.linalg.norm((U[j,j],U[i,j])),4)
+            Q[j,j] = np.conj(U[j,j]) / length
+            Q[i,j] = U[i,j] / length
+            Q[j,i] = np.conj(U[i,j]) / length
+            Q[i,i] = -U[j,j] / length
+            qH_list.append(Q.conj().T)
+            U = Q @ U
+            U_til = np.zeros((2,2))
+            U_til[0,0] = Q[j,j]
+            U_til[1,0] = Q[i,j]
+            U_til[1,0] = Q[j,i]
+            U_til[1,1] = Q[i,i]
+            U_til = U_til.conj().T
+
 
 def _closest_unitary(matrix):
     svd_u, _, svd_v = np.linalg.svd(matrix)
