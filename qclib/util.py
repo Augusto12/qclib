@@ -242,3 +242,19 @@ def build_state_dict(state):
             binary_string = "{:0{}b}".format(value_idx, n_qubits)[::-1]
             state_dict[binary_string] = value
     return state_dict
+
+def build_gray_codes(n1, n2):
+    """
+    Builds a gray sequence between start and end
+    """
+    length = (n1 if n1 > n2 else n2).bit_length()
+    codes = [n1]
+    for i in range(length):
+        bit = 1<<i
+        if (bit & n1 == 0) and (bit & n2 == bit):
+            n1 = n1 | bit
+        elif (bit & n1 == bit) and (bit & n2 == 0):
+            n1 = n1 ^ bit
+        if n1 != codes[-1]:
+            codes.append(n1)        
+    return codes
