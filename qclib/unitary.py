@@ -22,14 +22,16 @@ import numpy as np
 import scipy as sp
 from qiskit import QuantumCircuit, QuantumRegister
 from qiskit import transpile
-from qiskit.circuit.library import RYGate, CZGate
-from qiskit.extensions import UnitaryGate, UCRYGate, UCRZGate
+from qiskit.circuit.library import RYGate, CZGate, MCXGate
+from qiskit.extensions import UnitaryGate, SingleQubitUnitary, UCRYGate, UCRZGate
 from qiskit.quantum_info.operators.predicates import is_unitary_matrix
 from qiskit.quantum_info.synthesis import two_qubit_decompose
 from qiskit.quantum_info import Operator
 from qclib.gates.ucr import ucr
 from qclib.gates.uc_gate import UCGate
 from qclib.decompose2q import TwoQubitDecomposeUpToDiagonal
+from qclib.util import build_gray_codes
+from qclib.qrd import *
 
 
 def unitary(gate, decomposition="qsd", iso=0, apply_a2=True):
@@ -40,6 +42,8 @@ def unitary(gate, decomposition="qsd", iso=0, apply_a2=True):
     circuit = build_unitary(gate, decomposition, iso)
     if decomposition == "qsd" and apply_a2:
         return _apply_a2(circuit)
+    elif decomposition == "qrd":
+        return qrd(gate)
 
     return circuit
 
@@ -103,7 +107,7 @@ def _unitary(gate_list, n_qubits, decomposition="qsd"):
             return circuit
 
         return _csd(gate_list, n_qubits)
-
+    
     # QSD
     return _qsd(*gate_list)
 
@@ -170,32 +174,6 @@ def _qsd(gate1, gate2):
     circuit.append(right_gate.to_instruction(), qubits[0:-1])
 
     return circuit
-
-# QR decomposition
-def _qr(gate):
-    U = gate
-    dim = len(U)
-    n_qubits = log2(dim)
-    qubits = QuantumRegister(n_qubits)
-    circuit = QuantumCircuit(qubits)
-    qH_list = []
-    for j in range(dim):
-        for i in range(j+1,dim):
-            Q = np.eye(dim)
-            length = round(np.linalg.norm((U[j,j],U[i,j])),4)
-            Q[j,j] = np.conj(U[j,j]) / length
-            Q[i,j] = U[i,j] / length
-            Q[j,i] = np.conj(U[i,j]) / length
-            Q[i,i] = -U[j,j] / length
-            qH_list.append(Q.conj().T)
-            U = Q @ U
-            U_til = np.zeros((2,2))
-            U_til[0,0] = Q[j,j]
-            U_til[1,0] = Q[i,j]
-            U_til[1,0] = Q[j,i]
-            U_til[1,1] = Q[i,i]
-            U_til = U_til.conj().T
-
 
 def _closest_unitary(matrix):
     svd_u, _, svd_v = np.linalg.svd(matrix)

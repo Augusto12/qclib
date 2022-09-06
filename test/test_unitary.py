@@ -35,7 +35,7 @@ class TestUnitary(TestCase):
             for j, bit in enumerate(f'{i:0{n_qubits}b}'[::-1]):
                 if bit == '1':
                     circuit.x(j)
-
+            
             circuit.append(gate.to_instruction(), circuit.qubits)
             state = get_state(circuit)
             self.assertTrue(np.allclose(unitary_matrix[:, i], state))
@@ -98,3 +98,10 @@ class TestUnitary(TestCase):
         n_cx = gate.count_ops()['cx']
         self.assertTrue(n_cx <= 100)
         self.assertTrue(np.allclose(unitary_matrix[:, 0], state))
+
+    # QRD
+
+    def test_unitary_qrd(self):
+        """ Testing qclib.unitary qrd"""
+        for n_qubits in range(2, 5):
+            self._test_unitary('qrd', n_qubits, 0, False)
